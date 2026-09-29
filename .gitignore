@@ -12,3 +12,4 @@ state/paused_until
 STOP
 .ruff_cache/
 .pytest_cache/
+systemd/factory.env
