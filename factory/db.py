@@ -185,6 +185,29 @@ def insert_project(
     return cur.lastrowid
 
 
+def insert_task(
+    conn: sqlite3.Connection,
+    *,
+    project_id: int,
+    seq: int,
+    title: str,
+    description: str,
+    acceptance: str,
+    complexity: str,
+    updated_at: str,
+    status: str = "pending",
+) -> int:
+    """Insert a new task row. Returns its id."""
+    cur = conn.execute(
+        "INSERT INTO tasks "
+        "(project_id, seq, title, description, acceptance, complexity, status, updated_at) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        (project_id, seq, title, description, acceptance, complexity, status, updated_at),
+    )
+    conn.commit()
+    return cur.lastrowid
+
+
 def increment_daily_counters(
     conn: sqlite3.Connection,
     day: str,

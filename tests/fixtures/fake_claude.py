@@ -70,6 +70,40 @@ def main() -> None:
         print(json.dumps({"result": "not a json object", "cost_usd": 0.02}))
         sys.exit(0)
 
+    if "PLAN_OK" in prompt:
+        tasks = [
+            {
+                "title": "Add core function",
+                "description": "Implement the main feature.",
+                "acceptance": "pytest tests/test_core.py passes",
+                "complexity": "complex",
+            },
+            {
+                "title": "Add test for core function",
+                "description": "Cover the main feature with a test.",
+                "acceptance": "pytest -q exits 0",
+                "complexity": "simple",
+            },
+        ]
+        print(json.dumps({"result": json.dumps(tasks), "cost_usd": 0.05}))
+        sys.exit(0)
+
+    if "PLAN_BAD_JSON" in prompt:
+        print(json.dumps({"result": "not a json array", "cost_usd": 0.05}))
+        sys.exit(0)
+
+    if "PLAN_MISSING_FIELD" in prompt:
+        tasks = [{"title": "Incomplete", "description": "d"}]
+        print(json.dumps({"result": json.dumps(tasks), "cost_usd": 0.05}))
+        sys.exit(0)
+
+    if "PLAN_BAD_COMPLEXITY" in prompt:
+        tasks = [
+            {"title": "T", "description": "d", "acceptance": "a", "complexity": "medium"}
+        ]
+        print(json.dumps({"result": json.dumps(tasks), "cost_usd": 0.05}))
+        sys.exit(0)
+
     if "IDEATE_BAD_CATEGORY" in prompt:
         ideas = [
             {

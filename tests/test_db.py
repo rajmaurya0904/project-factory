@@ -10,6 +10,7 @@ from factory.db import (
     current_version,
     insert_idea,
     insert_project,
+    insert_task,
     migrate,
     update_idea_status,
 )
@@ -111,6 +112,22 @@ def test_update_idea_status_sets_score_and_reason(tmp_path: Path) -> None:
     assert row["status"] == "rejected"
     assert row["score"] == 3.0
     assert row["reject_reason"] == "too niche"
+
+
+def test_insert_task_returns_id_and_defaults_to_pending(tmp_path: Path) -> None:
+    conn = connect(tmp_path / "factory.db")
+    idea_id = insert_idea(conn, title="t", category="cli", pitch="p", created_at="2026-01-01")
+    project_id = insert_project(
+        conn, idea_id=idea_id, repo_name="factory-widget", local_path="/tmp/w",
+        language="python", created_at="2026-01-01",
+    )
+    task_id = insert_task(
+        conn, project_id=project_id, seq=1, title="Add README", description="d",
+        acceptance="README.md exists", complexity="simple", updated_at="2026-01-01",
+    )
+    row = conn.execute("SELECT status, attempts FROM tasks WHERE id = ?", (task_id,)).fetchone()
+    assert row["status"] == "pending"
+    assert row["attempts"] == 0
 
 
 def test_insert_project_with_bad_idea_id_raises(tmp_path: Path) -> None:
