@@ -27,6 +27,48 @@ def main() -> None:
         print(json.dumps({"result": "partial", "cost_usd": 0.01}))
         sys.exit(2)
 
+    if "IDEATE_OK" in prompt:
+        ideas = [
+            {
+                "title": "CLI Weather Widget",
+                "category": "cli",
+                "pitch": "A tiny CLI that prints today's weather for your saved city.",
+                "source": "hand-picked for tests",
+                "est_scope_hours": 6,
+            },
+            {
+                "title": "Markdown Link Checker",
+                "category": "devtool",
+                "pitch": "Scans a repo's Markdown files for dead links.",
+                "source": "hand-picked for tests",
+                "est_scope_hours": 8,
+            },
+        ]
+        print(json.dumps({"result": json.dumps(ideas), "cost_usd": 0.1}))
+        sys.exit(0)
+
+    if "IDEATE_BAD_JSON" in prompt:
+        print(json.dumps({"result": "not a json array at all", "cost_usd": 0.1}))
+        sys.exit(0)
+
+    if "IDEATE_MISSING_FIELD" in prompt:
+        ideas = [{"title": "Incomplete Idea", "category": "cli", "pitch": "Missing fields."}]
+        print(json.dumps({"result": json.dumps(ideas), "cost_usd": 0.1}))
+        sys.exit(0)
+
+    if "IDEATE_BAD_CATEGORY" in prompt:
+        ideas = [
+            {
+                "title": "Bad Category Idea",
+                "category": "not-a-real-category",
+                "pitch": "p",
+                "source": "s",
+                "est_scope_hours": 5,
+            }
+        ]
+        print(json.dumps({"result": json.dumps(ideas), "cost_usd": 0.1}))
+        sys.exit(0)
+
     print(
         json.dumps(
             {
