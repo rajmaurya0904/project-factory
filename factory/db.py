@@ -214,6 +214,66 @@ def insert_task(
     return cur.lastrowid
 
 
+def update_task_status(
+    conn: sqlite3.Connection,
+    task_id: int,
+    *,
+    status: str,
+    updated_at: str,
+    model_used: str | None = None,
+    commit_sha: str | None = None,
+    bump_attempts: bool = False,
+) -> None:
+    """Set a task's status (and optionally model_used/commit_sha) after a
+    build attempt. `bump_attempts` increments `attempts` by one; existing
+    model_used/commit_sha are kept when the new value is None."""
+    conn.execute(
+        "UPDATE tasks SET status = ?, "
+        "model_used = COALESCE(?, model_used), "
+        "commit_sha = COALESCE(?, commit_sha), "
+        "attempts = attempts + ?, "
+        "updated_at = ? WHERE id = ?",
+        (status, model_used, commit_sha, 1 if bump_attempts else 0, updated_at, task_id),
+    )
+    conn.commit()
+
+
+def insert_session(
+    conn: sqlite3.Connection,
+    *,
+    project_id: int | None,
+    task_id: int | None,
+    stage: str,
+    model: str | None,
+    started_at: str,
+    ended_at: str | None = None,
+    exit_code: int | None = None,
+    input_tokens: int | None = None,
+    output_tokens: int | None = None,
+    cost_usd: float | None = None,
+    log_path: str | None = None,
+) -> int:
+    """Insert a new session row. Returns its id."""
+    cur = conn.execute(
+        "INSERT INTO sessions "
+        "(project_id, task_id, stage, model, started_at, ended_at, exit_code, "
+        "input_tokens, output_tokens, cost_usd, log_path) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (
+            project_id, task_id, stage, model, started_at, ended_at, exit_code,
+            input_tokens, output_tokens, cost_usd, log_path,
+        ),
+    )
+    conn.commit()
+    return cur.lastrowid
+
+
+def update_session_log_path(conn: sqlite3.Connection, session_id: int, log_path: str) -> None:
+    """Record the log file path for a session after it's been written."""
+    conn.execute("UPDATE sessions SET log_path = ? WHERE id = ?", (log_path, session_id))
+    conn.commit()
+
+
 def increment_daily_counters(
     conn: sqlite3.Connection,
     day: str,

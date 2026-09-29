@@ -12,6 +12,7 @@ from pathlib import Path
 def main() -> None:
     argv = sys.argv[1:]
     prompt = argv[argv.index("-p") + 1] if "-p" in argv else ""
+    model = argv[argv.index("--model") + 1] if "--model" in argv else ""
 
     if "SLEEP" in prompt:
         time.sleep(5)
@@ -123,6 +124,32 @@ def main() -> None:
             "# Changelog\n\n## v0.1.0\n\n- Initial release.\n", encoding="utf-8"
         )
         print(json.dumps({"result": "wrote CHANGELOG.md", "cost_usd": 0.01}))
+        sys.exit(0)
+
+    if "BUILD_OK" in prompt:
+        Path("feature.py").write_text("def add(a, b):\n    return a + b\n")
+        Path("test_feature.py").write_text(
+            "from feature import add\n\n\ndef test_add():\n    assert add(1, 2) == 3\n"
+        )
+        print(json.dumps({"result": "ok", "cost_usd": 0.01}))
+        sys.exit(0)
+
+    if "BUILD_BAD" in prompt:
+        Path("test_bad.py").write_text("def test_bad():\n    assert False\n")
+        print(json.dumps({"result": "ok", "cost_usd": 0.01}))
+        sys.exit(0)
+
+    if "MODEL_GATE" in prompt:
+        # Behavior depends on which --model this session was invoked with,
+        # so tests can prove an escalation retry actually ran on Sonnet.
+        if "haiku" in model:
+            Path("test_bad.py").write_text("def test_bad():\n    assert False\n")
+        else:
+            Path("good.py").write_text("def add(a, b):\n    return a + b\n")
+            Path("test_good.py").write_text(
+                "from good import add\n\n\ndef test_add():\n    assert add(1, 2) == 3\n"
+            )
+        print(json.dumps({"result": "ok", "cost_usd": 0.01}))
         sys.exit(0)
 
     print(
