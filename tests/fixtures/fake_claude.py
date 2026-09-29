@@ -6,6 +6,7 @@ tests don't need custom CLI flags this script would have to also accept."""
 import json
 import sys
 import time
+from pathlib import Path
 
 
 def main() -> None:
@@ -115,6 +116,13 @@ def main() -> None:
             }
         ]
         print(json.dumps({"result": json.dumps(ideas), "cost_usd": 0.1}))
+        sys.exit(0)
+
+    if "RELEASE_OK" in prompt:
+        Path("CHANGELOG.md").write_text(
+            "# Changelog\n\n## v0.1.0\n\n- Initial release.\n", encoding="utf-8"
+        )
+        print(json.dumps({"result": "wrote CHANGELOG.md", "cost_usd": 0.01}))
         sys.exit(0)
 
     print(

@@ -185,6 +185,12 @@ def insert_project(
     return cur.lastrowid
 
 
+def update_project_status(conn: sqlite3.Connection, project_id: int, *, status: str) -> None:
+    """Set a project's status (e.g. "shipped") once a pipeline stage completes."""
+    conn.execute("UPDATE projects SET status = ? WHERE id = ?", (status, project_id))
+    conn.commit()
+
+
 def insert_task(
     conn: sqlite3.Connection,
     *,
