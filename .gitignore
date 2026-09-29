@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+build/
+dist/
+state/factory.db
+state/logs/
+state/paused_until
+.env
+STOP
+.ruff_cache/
+.pytest_cache/

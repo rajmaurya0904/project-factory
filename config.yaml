@@ -1,0 +1,38 @@
+agent:
+  driver: claude # claude | codex
+  models:
+    haiku: haiku # cheap: mechanical work
+    sonnet: sonnet # strong: reasoning and core code
+  stage_models:
+    ideate: sonnet
+    validate: haiku
+    scaffold: haiku
+    plan: sonnet
+    build_simple: haiku # tests, docs, README, CI, examples, lint fixes
+    build_complex: sonnet # core features, algorithms, refactors, MCP/skill logic
+    fix: sonnet
+    commit_message: haiku
+    release: haiku
+  escalate_on_failure: true # haiku task fails gate twice -> retry once with sonnet
+  max_turns_per_task: 25
+  task_timeout_sec: 900
+github:
+  owner: rajmaurya0904
+  repo_prefix: ""
+  visibility: public
+  license: MIT
+limits:
+  max_commits_per_day: 80
+  max_sessions_per_day: 90
+  max_repos_per_day: 5
+  max_cost_usd_per_day: 0 # 0 = disabled (subscription); set for API key use
+  max_consecutive_failures: 5
+  min_seconds_between_sessions: 20
+quality:
+  reject_if_existing_repo_stars_over: 200
+  min_tasks_per_project: 10
+  max_tasks_per_project: 20
+  require: [readme, license, tests, ci]
+paths:
+  workspace: /home/factory/factory-workspace
+  stop_file: ./STOP
