@@ -100,15 +100,20 @@ def _build_agent(raw: dict[str, Any]) -> AgentConfig:
         "agent",
     )
     if raw["driver"] not in _VALID_DRIVERS:
-        raise ConfigError(f"config.agent.driver must be one of {_VALID_DRIVERS}, got {raw['driver']!r}")
+        raise ConfigError(
+            f"config.agent.driver must be one of {_VALID_DRIVERS}, got {raw['driver']!r}"
+        )
     stage_models = raw["stage_models"]
     missing_stages = _STAGE_MODEL_KEYS - stage_models.keys()
     if missing_stages:
-        raise ConfigError(f"config.agent.stage_models is missing stages: {sorted(missing_stages)}")
+        raise ConfigError(
+            f"config.agent.stage_models is missing stages: {sorted(missing_stages)}"
+        )
     for stage, alias in stage_models.items():
         if alias not in _VALID_MODEL_ALIASES:
             raise ConfigError(
-                f"config.agent.stage_models.{stage} must be one of {_VALID_MODEL_ALIASES}, got {alias!r}"
+                f"config.agent.stage_models.{stage} must be one of "
+                f"{_VALID_MODEL_ALIASES}, got {alias!r}"
             )
     if raw["max_turns_per_task"] <= 0:
         raise ConfigError("config.agent.max_turns_per_task must be positive")
@@ -130,7 +135,8 @@ def _build_github(raw: dict[str, Any]) -> GithubConfig:
         raise ConfigError("config.github.owner must not be empty")
     if raw["visibility"] not in _VALID_VISIBILITY:
         raise ConfigError(
-            f"config.github.visibility must be one of {_VALID_VISIBILITY}, got {raw['visibility']!r}"
+            f"config.github.visibility must be one of "
+            f"{_VALID_VISIBILITY}, got {raw['visibility']!r}"
         )
     return GithubConfig(
         owner=raw["owner"],

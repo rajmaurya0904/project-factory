@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import logging.handlers
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -39,7 +39,7 @@ def get_logger(state_dir: str | Path) -> logging.Logger:
 
 def session_log_path(state_dir: str | Path, session_id: int, when: datetime | None = None) -> Path:
     """Path for one session's JSON log: state/logs/<date>/<session_id>.json."""
-    when = when or datetime.now(timezone.utc)
+    when = when or datetime.now(UTC)
     day_dir = Path(state_dir) / "logs" / when.strftime("%Y-%m-%d")
     day_dir.mkdir(parents=True, exist_ok=True)
     return day_dir / f"{session_id}.json"

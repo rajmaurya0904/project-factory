@@ -19,7 +19,8 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 
 def _config(tmp_path: Path, **limit_overrides):
     cfg = load_config(REPO_ROOT / "config.yaml")
-    cfg = dataclasses.replace(cfg, paths=dataclasses.replace(cfg.paths, stop_file=str(tmp_path / "STOP")))
+    stop_path = str(tmp_path / "STOP")
+    cfg = dataclasses.replace(cfg, paths=dataclasses.replace(cfg.paths, stop_file=stop_path))
     if limit_overrides:
         cfg = dataclasses.replace(cfg, limits=dataclasses.replace(cfg.limits, **limit_overrides))
     return cfg
@@ -71,10 +72,10 @@ def test_count_consecutive_session_failures(tmp_path: Path) -> None:
     conn = connect(tmp_path / "factory.db")
     conn.executemany(
         "INSERT INTO sessions (stage, exit_code, ended_at) VALUES (?, ?, ?)",
-        [("build", 1, "t1"), ("build", 1, "t2"), ("build", 0, "t3")],
+        [("build", 0, "t1"), ("build", 1, "t2"), ("build", 1, "t3")],
     )
     conn.commit()
-    # Most recent two failed, the one before that succeeded -> streak of 2.
+    # Oldest succeeded, the two most recent failed -> streak of 2.
     assert count_consecutive_session_failures(conn) == 2
     conn.close()
 

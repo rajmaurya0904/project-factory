@@ -17,9 +17,9 @@ def test_get_logger_creates_log_dir_and_file(tmp_path: Path) -> None:
 
 
 def test_session_log_path_is_grouped_by_day(tmp_path: Path) -> None:
-    from datetime import datetime, timezone
+    from datetime import UTC, datetime
 
-    when = datetime(2026, 1, 2, tzinfo=timezone.utc)
+    when = datetime(2026, 1, 2, tzinfo=UTC)
     path = session_log_path(tmp_path, 42, when=when)
     assert path == tmp_path / "logs" / "2026-01-02" / "42.json"
 

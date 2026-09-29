@@ -23,7 +23,10 @@ def test_loads_real_config_yaml() -> None:
 def _write(tmp_path: Path, overrides: dict) -> Path:
     base = yaml.safe_load((REPO_ROOT / "config.yaml").read_text(encoding="utf-8"))
     for section, values in overrides.items():
-        base[section].update(values) if isinstance(values, dict) else base.__setitem__(section, values)
+        if isinstance(values, dict):
+            base[section].update(values)
+        else:
+            base[section] = values
     out = tmp_path / "config.yaml"
     out.write_text(yaml.safe_dump(base), encoding="utf-8")
     return out

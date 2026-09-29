@@ -39,7 +39,8 @@ def check_daily_caps(conn: sqlite3.Connection, config: Config, day: str) -> tupl
         if used >= cap:
             return False, f"daily cap reached: {name} {used}/{cap}"
     if limits.max_cost_usd_per_day > 0 and counters["cost_usd"] >= limits.max_cost_usd_per_day:
-        return False, f"daily cap reached: cost_usd {counters['cost_usd']}/{limits.max_cost_usd_per_day}"
+        cost, cap = counters["cost_usd"], limits.max_cost_usd_per_day
+        return False, f"daily cap reached: cost_usd {cost}/{cap}"
     return True, None
 
 
@@ -61,8 +62,9 @@ def count_consecutive_session_failures(conn: sqlite3.Connection) -> int:
 def check_failure_streak(conn: sqlite3.Connection, config: Config) -> tuple[bool, str | None]:
     """Block further sessions once too many failures have happened in a row."""
     streak = count_consecutive_session_failures(conn)
-    if streak >= config.limits.max_consecutive_failures:
-        return False, f"consecutive failure streak: {streak}/{config.limits.max_consecutive_failures}"
+    cap = config.limits.max_consecutive_failures
+    if streak >= cap:
+        return False, f"consecutive failure streak: {streak}/{cap}"
     return True, None
 
 
