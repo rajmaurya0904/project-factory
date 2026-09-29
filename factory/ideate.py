@@ -5,8 +5,6 @@ with status "new". Validation is stage 2's job (validate.py).
 
 from __future__ import annotations
 
-import json
-import re
 from collections.abc import Callable, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
@@ -14,6 +12,7 @@ from pathlib import Path
 from factory.agent import AgentResult, run_agent
 from factory.config import Config
 from factory.db import insert_idea
+from factory.jsonutil import JsonExtractError, extract_json
 from factory.router import model_for_stage
 
 DEFAULT_PROMPTS_DIR = Path(__file__).resolve().parent.parent / "prompts"
@@ -41,36 +40,14 @@ def build_ideate_prompt(prompts_dir: str | Path, user_pain_points_path: str | Pa
     return f"{base}\n\n## Owner's recurring manual pain points\n\n{pains}"
 
 
-def _strip_code_fence(text: str) -> str:
-    cleaned = text.strip()
-    cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned)
-    cleaned = re.sub(r"\s*```$", "", cleaned)
-    return cleaned.strip()
-
-
 def parse_ideas_json(text: str | None) -> list[dict]:
     """Parse and validate the agent's idea list. Raises IdeateError on anything
     that isn't a clean, complete list of ideas -- callers must not insert
     partial or malformed data."""
-    if not text:
-        raise IdeateError("agent returned no result text")
-
-    cleaned = _strip_code_fence(text)
     try:
-        data = json.loads(cleaned)
-    except json.JSONDecodeError:
-        match = re.search(r"\[.*\]", cleaned, re.DOTALL)
-        if not match:
-            raise IdeateError(
-                f"could not find a JSON array in agent output: {cleaned[:200]!r}"
-            ) from None
-        try:
-            data = json.loads(match.group(0))
-        except json.JSONDecodeError as e:
-            raise IdeateError(f"agent output was not valid JSON: {e}") from e
-
-    if not isinstance(data, list):
-        raise IdeateError("agent output JSON was not a list")
+        data = extract_json(text, kind="array")
+    except JsonExtractError as e:
+        raise IdeateError(str(e)) from e
 
     validated = []
     for i, item in enumerate(data):

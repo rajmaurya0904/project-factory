@@ -147,6 +147,22 @@ def insert_idea(
     return cur.lastrowid
 
 
+def update_idea_status(
+    conn: sqlite3.Connection,
+    idea_id: int,
+    *,
+    status: str,
+    score: float | None = None,
+    reject_reason: str | None = None,
+) -> None:
+    """Set an idea's status (and optionally score/reject_reason) after validation."""
+    conn.execute(
+        "UPDATE ideas SET status = ?, score = ?, reject_reason = ? WHERE id = ?",
+        (status, score, reject_reason, idea_id),
+    )
+    conn.commit()
+
+
 def insert_project(
     conn: sqlite3.Connection,
     *,

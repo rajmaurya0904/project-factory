@@ -5,7 +5,14 @@ from pathlib import Path
 
 import pytest
 
-from factory.db import connect, current_version, insert_idea, insert_project, migrate
+from factory.db import (
+    connect,
+    current_version,
+    insert_idea,
+    insert_project,
+    migrate,
+    update_idea_status,
+)
 
 EXPECTED_TABLES = {
     "ideas",
@@ -90,6 +97,20 @@ def test_insert_project_requires_existing_idea(tmp_path: Path) -> None:
     row = conn.execute("SELECT status FROM projects WHERE id = ?", (project_id,)).fetchone()
     assert row["status"] == "scaffolded"
     conn.close()
+
+
+def test_update_idea_status_sets_score_and_reason(tmp_path: Path) -> None:
+    conn = connect(tmp_path / "factory.db")
+    idea_id = insert_idea(
+        conn, title="t", category="cli", pitch="p", created_at="2026-01-01"
+    )
+    update_idea_status(conn, idea_id, status="rejected", score=3.0, reject_reason="too niche")
+    row = conn.execute(
+        "SELECT status, score, reject_reason FROM ideas WHERE id = ?", (idea_id,)
+    ).fetchone()
+    assert row["status"] == "rejected"
+    assert row["score"] == 3.0
+    assert row["reject_reason"] == "too niche"
 
 
 def test_insert_project_with_bad_idea_id_raises(tmp_path: Path) -> None:

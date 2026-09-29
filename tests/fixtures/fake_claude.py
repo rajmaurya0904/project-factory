@@ -56,6 +56,20 @@ def main() -> None:
         print(json.dumps({"result": json.dumps(ideas), "cost_usd": 0.1}))
         sys.exit(0)
 
+    if "VALIDATE_HIGH_SCORE" in prompt:
+        score = {"score": 9, "rationale": "Specific, useful, nothing else does this."}
+        print(json.dumps({"result": json.dumps(score), "cost_usd": 0.02}))
+        sys.exit(0)
+
+    if "VALIDATE_LOW_SCORE" in prompt:
+        score = {"score": 2, "rationale": "Too vague to be useful on its own."}
+        print(json.dumps({"result": json.dumps(score), "cost_usd": 0.02}))
+        sys.exit(0)
+
+    if "VALIDATE_BAD_JSON" in prompt:
+        print(json.dumps({"result": "not a json object", "cost_usd": 0.02}))
+        sys.exit(0)
+
     if "IDEATE_BAD_CATEGORY" in prompt:
         ideas = [
             {

@@ -77,7 +77,7 @@ def test_parse_ideas_json_extracts_array_from_surrounding_prose() -> None:
 
 
 def test_parse_ideas_json_none_raises() -> None:
-    with pytest.raises(IdeateError, match="no result text"):
+    with pytest.raises(IdeateError, match="no text to parse"):
         parse_ideas_json(None)
 
 
@@ -87,7 +87,7 @@ def test_parse_ideas_json_not_json_raises() -> None:
 
 
 def test_parse_ideas_json_not_a_list_raises() -> None:
-    with pytest.raises(IdeateError, match="not a list"):
+    with pytest.raises(IdeateError, match="was not a array"):
         parse_ideas_json('{"title": "T"}')
 
 
