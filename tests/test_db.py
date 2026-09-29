@@ -1,8 +1,11 @@
 """Tests for factory.db: schema creation, idempotent migration, table shape."""
 
+import sqlite3
 from pathlib import Path
 
-from factory.db import connect, current_version, migrate
+import pytest
+
+from factory.db import connect, current_version, insert_idea, insert_project, migrate
 
 EXPECTED_TABLES = {
     "ideas",
@@ -57,4 +60,47 @@ def test_foreign_keys_pragma_enabled(tmp_path: Path) -> None:
     conn = connect(tmp_path / "factory.db")
     row = conn.execute("PRAGMA foreign_keys").fetchone()
     assert row[0] == 1
+    conn.close()
+
+
+def test_insert_idea_returns_id(tmp_path: Path) -> None:
+    conn = connect(tmp_path / "factory.db")
+    idea_id = insert_idea(
+        conn, title="t", category="cli", pitch="p", created_at="2026-01-01"
+    )
+    assert idea_id == 1
+    row = conn.execute("SELECT status FROM ideas WHERE id = ?", (idea_id,)).fetchone()
+    assert row["status"] == "new"
+    conn.close()
+
+
+def test_insert_project_requires_existing_idea(tmp_path: Path) -> None:
+    conn = connect(tmp_path / "factory.db")
+    idea_id = insert_idea(
+        conn, title="t", category="cli", pitch="p", created_at="2026-01-01"
+    )
+    project_id = insert_project(
+        conn,
+        idea_id=idea_id,
+        repo_name="factory-widget",
+        local_path="/tmp/factory-widget",
+        language="python",
+        created_at="2026-01-01",
+    )
+    row = conn.execute("SELECT status FROM projects WHERE id = ?", (project_id,)).fetchone()
+    assert row["status"] == "scaffolded"
+    conn.close()
+
+
+def test_insert_project_with_bad_idea_id_raises(tmp_path: Path) -> None:
+    conn = connect(tmp_path / "factory.db")
+    with pytest.raises(sqlite3.IntegrityError):
+        insert_project(
+            conn,
+            idea_id=999,
+            repo_name="factory-widget",
+            local_path="/tmp/factory-widget",
+            language="python",
+            created_at="2026-01-01",
+        )
     conn.close()

@@ -126,6 +126,49 @@ def get_daily_counters(conn: sqlite3.Connection, day: str) -> sqlite3.Row:
     return conn.execute("SELECT * FROM daily_counters WHERE day = ?", (day,)).fetchone()
 
 
+def insert_idea(
+    conn: sqlite3.Connection,
+    *,
+    title: str,
+    category: str,
+    pitch: str,
+    created_at: str,
+    source: str | None = None,
+    score: float | None = None,
+    status: str = "new",
+) -> int:
+    """Insert a new idea row. Returns its id."""
+    cur = conn.execute(
+        "INSERT INTO ideas (title, category, pitch, source, score, status, created_at) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (title, category, pitch, source, score, status, created_at),
+    )
+    conn.commit()
+    return cur.lastrowid
+
+
+def insert_project(
+    conn: sqlite3.Connection,
+    *,
+    idea_id: int,
+    repo_name: str,
+    local_path: str,
+    language: str,
+    created_at: str,
+    repo_url: str | None = None,
+    status: str = "scaffolded",
+) -> int:
+    """Insert a new project row. Returns its id."""
+    cur = conn.execute(
+        "INSERT INTO projects "
+        "(idea_id, repo_name, repo_url, local_path, language, status, created_at) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (idea_id, repo_name, repo_url, local_path, language, status, created_at),
+    )
+    conn.commit()
+    return cur.lastrowid
+
+
 def increment_daily_counters(
     conn: sqlite3.Connection,
     day: str,

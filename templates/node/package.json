@@ -1,0 +1,16 @@
+{
+  "name": "__PROJECT_SLUG__",
+  "version": "0.1.0",
+  "description": "__PROJECT_PITCH__",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "vitest run",
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "eslint": "^9.0.0",
+    "vitest": "^2.0.0"
+  },
+  "license": "MIT"
+}
