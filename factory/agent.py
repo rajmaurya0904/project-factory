@@ -23,6 +23,9 @@ _RATE_LIMIT_MARKERS = (
     "quota exceeded",
     "try again later",
     "5-hour limit",
+    "session limit",
+    "weekly limit",
+    "hit your limit",
 )
 
 

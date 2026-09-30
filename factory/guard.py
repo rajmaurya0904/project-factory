@@ -7,6 +7,7 @@ can log the reason and exit cleanly rather than crash.
 from __future__ import annotations
 
 import sqlite3
+from datetime import UTC, datetime
 from pathlib import Path
 
 from factory.config import Config
@@ -44,17 +45,36 @@ def check_daily_caps(conn: sqlite3.Connection, config: Config, day: str) -> tupl
     return True, None
 
 
+# A streak stops counting once its most recent failure is this old: without
+# it, hitting the cap is a permanent deadlock -- the block prevents any new
+# session from running, so the streak (only ever updated by a session outcome)
+# can never clear on its own, even after the underlying cause is fixed. This
+# gives the runner one fresh probe every cooldown window instead.
+_FAILURE_STREAK_STALE_AFTER_SEC = 1800
+
+
 def count_consecutive_session_failures(conn: sqlite3.Connection) -> int:
     """Count finished sessions with a non-zero exit code, most recent first,
     stopping at the first success. In-progress sessions (ended_at IS NULL)
-    are skipped rather than counted as failures."""
+    are skipped rather than counted as failures. A rate-limited session
+    (exit_code 75) doesn't count either -- that's not a real failure. Nor
+    does anything older than the staleness window -- see above."""
     rows = conn.execute(
-        "SELECT exit_code FROM sessions WHERE ended_at IS NOT NULL ORDER BY id DESC"
+        "SELECT exit_code, ended_at FROM sessions WHERE ended_at IS NOT NULL ORDER BY id DESC"
     ).fetchall()
     streak = 0
+    now = datetime.now(UTC)
     for row in rows:
         if row["exit_code"] == 0:
             break
+        if row["exit_code"] == 75:  # rate limited: not a real failure
+            continue
+        try:
+            ended = datetime.fromisoformat(row["ended_at"])
+            if (now - ended).total_seconds() > _FAILURE_STREAK_STALE_AFTER_SEC:
+                break
+        except ValueError:
+            pass
         streak += 1
     return streak
 

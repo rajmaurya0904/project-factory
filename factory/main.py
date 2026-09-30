@@ -148,6 +148,9 @@ def run_once(
             gitleaks_bin=gitleaks_bin,
         )
         logger.info("task %s (%s): %s", task["id"], task["title"], result.status)
+        if result.status == "rate_limited":
+            logger.warning("rate limited, pausing %ss", RATE_LIMIT_BACKOFF_SEC)
+            write_rate_limit_pause(state_dir)
         return True
 
     for row in conn.execute("SELECT * FROM projects WHERE status != 'shipped'"):

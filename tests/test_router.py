@@ -22,8 +22,8 @@ def _agent_cfg():
 
 def test_model_for_stage_resolves_alias_to_real_model() -> None:
     cfg = _agent_cfg()
-    assert model_for_stage(cfg, "ideate") == "sonnet"
-    assert model_for_stage(cfg, "validate") == "haiku"
+    assert model_for_stage(cfg, "ideate") == cfg.models["sonnet"]
+    assert model_for_stage(cfg, "validate") == cfg.models["haiku"]
 
 
 def test_model_for_stage_unknown_stage_raises() -> None:
@@ -39,8 +39,8 @@ def test_alias_for_task_simple_vs_complex() -> None:
 
 def test_model_for_task_resolves_real_model() -> None:
     cfg = _agent_cfg()
-    assert model_for_task(cfg, "simple") == "haiku"
-    assert model_for_task(cfg, "complex") == "sonnet"
+    assert model_for_task(cfg, "simple") == cfg.models["haiku"]
+    assert model_for_task(cfg, "complex") == cfg.models["sonnet"]
 
 
 def test_model_for_task_unknown_complexity_raises() -> None:
@@ -64,4 +64,5 @@ def test_should_escalate_respects_config_flag() -> None:
 
 
 def test_escalated_model_is_sonnet() -> None:
-    assert escalated_model(_agent_cfg()) == "sonnet"
+    cfg = _agent_cfg()
+    assert escalated_model(cfg) == cfg.models["sonnet"]

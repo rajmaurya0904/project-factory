@@ -6,6 +6,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+from factory import builder
 from factory.builder import BuildResult, build_task, looks_like_shell_command, run_pending_tasks
 from factory.config import load_config
 from factory.db import connect, insert_idea, insert_project, insert_task
@@ -101,9 +102,11 @@ def test_build_task_success_commits_pushes_and_marks_done(tmp_path: Path) -> Non
         state_dir=str(tmp_path / "state"),
     )
 
+    sonnet_model = _config().agent.models["sonnet"]
+
     assert isinstance(result, BuildResult)
     assert result.status == "done"
-    assert result.model_used == "sonnet"
+    assert result.model_used == sonnet_model
     assert result.commit_sha
 
     row = conn.execute(
@@ -111,7 +114,7 @@ def test_build_task_success_commits_pushes_and_marks_done(tmp_path: Path) -> Non
     ).fetchone()
     assert row["status"] == "done"
     assert row["commit_sha"] == result.commit_sha
-    assert row["model_used"] == "sonnet"
+    assert row["model_used"] == sonnet_model
     assert row["attempts"] == 1
 
     assert "BUILD_OK: add feature" in _remote_log(remote)
@@ -124,7 +127,7 @@ def test_build_task_success_commits_pushes_and_marks_done(tmp_path: Path) -> Non
 
     sessions = conn.execute("SELECT model, task_id, log_path FROM sessions").fetchall()
     assert len(sessions) == 1
-    assert sessions[0]["model"] == "sonnet"
+    assert sessions[0]["model"] == sonnet_model
     assert sessions[0]["task_id"] == task["id"]
     assert Path(sessions[0]["log_path"]).exists()
 
@@ -183,14 +186,17 @@ def test_build_task_escalates_haiku_to_sonnet_after_two_failures(tmp_path: Path)
         state_dir=str(tmp_path / "state"),
     )
 
+    cfg_models = _config().agent.models
+
     assert result.status == "done"
-    assert result.model_used == "sonnet"  # proves the escalated attempt is what succeeded
+    # proves the escalated attempt is what succeeded
+    assert result.model_used == cfg_models["sonnet"]
 
     row = conn.execute(
         "SELECT status, model_used, attempts FROM tasks WHERE id = ?", (task["id"],)
     ).fetchone()
     assert row["status"] == "done"
-    assert row["model_used"] == "sonnet"
+    assert row["model_used"] == cfg_models["sonnet"]
     assert row["attempts"] == 2  # one attempt on haiku, one escalated attempt on sonnet
 
     assert "MODEL_GATE: escalation test" in _remote_log(remote)
@@ -198,7 +204,7 @@ def test_build_task_escalates_haiku_to_sonnet_after_two_failures(tmp_path: Path)
     sessions = conn.execute("SELECT model FROM sessions ORDER BY id").fetchall()
     models_used = [s["model"] for s in sessions]
     # two failed haiku rounds, then one successful sonnet round
-    assert models_used == ["haiku", "haiku", "sonnet"]
+    assert models_used == [cfg_models["haiku"], cfg_models["haiku"], cfg_models["sonnet"]]
 
 
 def test_build_task_no_escalation_when_disabled(tmp_path: Path) -> None:
@@ -239,7 +245,7 @@ def test_build_task_agent_failure_handled_like_gate_failure(tmp_path: Path) -> N
         state_dir=str(tmp_path / "state"),
     )
 
-    assert result.status == "failed"
+    assert result.status == "rate_limited"
     assert result.reason == "agent session was rate limited"
     assert _remote_log(remote) == before_log
 
@@ -248,12 +254,16 @@ def test_build_task_agent_failure_handled_like_gate_failure(tmp_path: Path) -> N
     ).stdout
     assert status.strip() == ""
 
+    # Reset to pending, not failed -- a rate limit isn't the task's fault, and
+    # marking it failed would burn one of its two attempts for no reason.
     row = conn.execute("SELECT status FROM tasks WHERE id = ?", (task["id"],)).fetchone()
-    assert row["status"] == "failed"
+    assert row["status"] == "pending"
 
     sessions = conn.execute("SELECT exit_code FROM sessions").fetchall()
     assert len(sessions) == 2
-    assert all(s["exit_code"] != 0 for s in sessions)
+    # Recorded as the rate-limit sentinel, not a raw nonzero exit code, so
+    # guard.py's failure-streak count doesn't treat a rate limit as a failure.
+    assert all(s["exit_code"] == builder.RATE_LIMITED_EXIT_CODE for s in sessions)
 
 
 # -- run_pending_tasks convenience wrapper ---------------------------------

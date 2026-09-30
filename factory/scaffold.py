@@ -11,6 +11,7 @@ from __future__ import annotations
 import re
 import shutil
 import subprocess
+import textwrap
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -162,8 +163,8 @@ def _init_git_and_commit(dest_dir: Path) -> None:
     _git(["branch", "-m", "main"], dest_dir)
     # Local (not global) identity: must not depend on the host's git config,
     # and must not touch the operator's own global config either.
-    _git(["config", "user.email", "factory@project-factory.local"], dest_dir)
-    _git(["config", "user.name", "project-factory bot"], dest_dir)
+    _git(["config", "user.email", "232206295+rajmaurya0904@users.noreply.github.com"], dest_dir)
+    _git(["config", "user.name", "rajmaurya0904"], dest_dir)
     _git(["add", "-A"], dest_dir)
     _git(["commit", "-q", "-m", "chore: scaffold project"], dest_dir)
 
@@ -224,6 +225,7 @@ def scaffold_project(
         "__PROJECT_PKG__": pkg_name(repo_name),
         "__PROJECT_TITLE__": idea["title"],
         "__PROJECT_PITCH__": idea["pitch"],
+        "__PROJECT_PITCH_DOC__": textwrap.fill(idea["pitch"], 88),
     }
     _copy_template(template_dir, dest_dir, tokens)
     _write_readme(dest_dir, idea["title"], idea["pitch"], meta)

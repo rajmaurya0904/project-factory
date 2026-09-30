@@ -99,6 +99,11 @@ def _reset_hard(local_path: str) -> None:
     _git(["clean", "-fd"], local_path)
 
 
+# Stored as the session exit_code when the CLI reports a usage/session limit, so the
+# failure-streak guard can tell a limit (wait it out) from a real failure.
+RATE_LIMITED_EXIT_CODE = 75
+
+
 def _agent_failure_reason(result: AgentResult) -> str:
     if result.rate_limited:
         return "agent session was rate limited"
@@ -142,7 +147,7 @@ def _run_session(
         model=model,
         started_at=started_at,
         ended_at=ended_at,
-        exit_code=result.exit_code,
+        exit_code=RATE_LIMITED_EXIT_CODE if result.rate_limited else result.exit_code,
         input_tokens=result.input_tokens,
         output_tokens=result.output_tokens,
         cost_usd=result.cost_usd,
@@ -264,6 +269,12 @@ def build_task(
         state_dir=state_dir, claude_bin=claude_bin, run_agent_fn=run_agent_fn, sleep_fn=sleep_fn,
     )
     passed, reason = _attempt_task(model=model, **kwargs)
+
+    if not passed and "rate limited" in (reason or ""):
+        _reset_hard(local_path)
+        now = datetime.now(UTC).isoformat()
+        update_task_status(conn, task_id, status="pending", updated_at=now)
+        return BuildResult(status="rate_limited", commit_sha=None, model_used=model, reason=reason)
 
     if not passed:
         _reset_hard(local_path)

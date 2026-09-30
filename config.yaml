@@ -2,7 +2,7 @@ agent:
   driver: claude # claude | codex
   models:
     haiku: haiku # cheap: mechanical work
-    sonnet: sonnet # strong: reasoning and core code
+    sonnet: claude-sonnet-5 # strong: reasoning and core code
   stage_models:
     ideate: sonnet
     validate: haiku

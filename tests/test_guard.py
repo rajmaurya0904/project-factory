@@ -1,6 +1,7 @@
 """Tests for factory.guard: stop file, allowlist, daily caps, failure streak."""
 
 import dataclasses
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from factory.config import load_config
@@ -91,6 +92,33 @@ def test_check_failure_streak_blocks_when_exceeded(tmp_path: Path) -> None:
     ok, reason = check_failure_streak(conn, cfg)
     assert ok is False
     assert "streak" in reason
+    conn.close()
+
+
+def test_count_consecutive_session_failures_ignores_rate_limited(tmp_path: Path) -> None:
+    conn = connect(tmp_path / "factory.db")
+    conn.executemany(
+        "INSERT INTO sessions (stage, exit_code, ended_at) VALUES (?, ?, ?)",
+        [("build", 0, "t1"), ("build", 75, "t2"), ("build", 1, "t3")],
+    )
+    conn.commit()
+    # Oldest succeeded, a rate limit in between doesn't count -> streak of 1.
+    assert count_consecutive_session_failures(conn) == 1
+    conn.close()
+
+
+def test_count_consecutive_session_failures_expires_after_cooldown(tmp_path: Path) -> None:
+    """A failure streak old enough to be stale stops blocking on its own --
+    otherwise hitting the cap is a permanent deadlock: the block itself
+    prevents any new session from running, so nothing could ever clear it."""
+    conn = connect(tmp_path / "factory.db")
+    stale = (datetime.now(UTC) - timedelta(hours=2)).isoformat()
+    conn.executemany(
+        "INSERT INTO sessions (stage, exit_code, ended_at) VALUES (?, ?, ?)",
+        [("build", 1, stale), ("build", 1, stale)],
+    )
+    conn.commit()
+    assert count_consecutive_session_failures(conn) == 0
     conn.close()
 
 
